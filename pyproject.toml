@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flash_amr_tools"
+version = "0.0.1"
+authors = [
+  { name="Keito Watanabe", email="k.wat8973@gmail.com" },
+  { name="Pierre Nürnberger, email=""},
+]
+description = "Small tool to create uniform data cubes of FLASH datasets. Port from bitbucket.org/pierrenbg/flash-amr-tools"
+readme = "README.md"
+requires-python = ">=3.0"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Homepage = "https://github.com/kwat0308/flash-amr-tools/tree/main/amr_tools"
+Issues = "https://github.com/kwat0308/flash-amr-tools/issues"
