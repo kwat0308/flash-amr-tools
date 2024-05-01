@@ -254,7 +254,7 @@ class AMRTools:
         sh = data.shape
 
         use_weights = False
-        if type(weights) is not None:
+        if weights != None:
             norm = np.zeros((int(bn[0]) * 2**(self.max_lvl+3), int(bn[1]) * 2**(self.max_lvl+3)), dtype=data.dtype)
             use_weights = True
 
