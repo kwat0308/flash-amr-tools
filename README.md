@@ -19,7 +19,7 @@ pip install flash-amr-tools
 1. Specify your filename that you want to look at:
    
 ```
-fname = "SILCC_hdf5_plt_cnt_0150"
+filename = "SILCC_hdf5_plt_cnt_0150"
 ```
 
 2. Initialise the `AMRTools` object:
@@ -27,26 +27,10 @@ fname = "SILCC_hdf5_plt_cnt_0150"
 ```
 from flash_amr_tools.amr_tools import AMRTools
 
-amrtools = AMRTools(fname)
+amrtools = AMRTools(filename)
 ```
 
 The initialisation will calculate the complete list of blocks, the minimum and maximum refinement of the whole domain, and the number of blocks in each dimension.
-
-Optionally, one can specify a particular region of interest to look into. The units should be the same as with those defined in your simulation:
-
-```
-# optional, if one wants to look at a specific region
-xmin = np.array([2.8931249e+20, -5.78625013e+20, -1.9287499e+20], dtype=np.float32)
-xmax = np.array([6.7506249e+20, -1.92874993e+20,  1.9287499e+20], dtype=np.float32)
-
-amrtools = AMRTools(fname, xmin, xmax)
-```
-
-One can also optionally force a region to have maximum / minimum refinement by passing the following arguments:
-
-```
-amrtools = AMRTools(fname, xmin, xmax, max_ref_given=10, min_ref_given=3)
-```
 
 3. Retrive the data (as specified in `flash.par`) as a uniform grid:
 
@@ -59,32 +43,31 @@ Note that the naming convention of the argument must follow the variable name in
 
 ### Plotting Routines
 
-In principle the above routines are enough to do any plotting with, but we can also go one step further to get slices / on-axis (weighted) projections.
+Optional plotting routines for slice & on-axis (weighted) projections are also available.
 
 #### Slices
 
-To retrive the slice, we require the data, the position, and the axis(0, 1, or 2) in which the slicing takes place. 
+To retrive the slice, we require the field name (as specified in `flash.par`), the position, and the axis(0, 1, or 2) in which the slicing takes place. 
 
 ```
 # ex. density slice along the mid-plane
-dens_sl = amrtools.get_slice(dens, pos=0.0, axis=2)
+dens_sl = amrtools.get_slice("dens", pos=0.0, axis=2)
 ```
 
 #### On-Axis Projections
 
-To obtain the projection, we require the data and the axis(0, 1, or 2) of the projection.
+To obtain the projection, we require the field name (as specified in `flash.par`) and the axis(0, 1, or 2) of the projection.
 
 ```
 # ex. column density along the z-axis
-cdens = amrtools.get_cdens(dens, axis=2)
+cdens = amrtools.get_cdens("dens", axis=2)
 ```
 
-Optionally, one can also specify weights to have weighted projections instead. Note that the shape of the weights must be the same as the data.
+Optionally, one can also specify weights to have weighted projections instead. Note that the field name for the weights must also be specified as in `flash.par`
 
 ```
 # ex. temperature-weighted projection along the z-axis
-temp = amrtools.get_cube("temp")
-cdens_wtemp = amrtools.get_cdens(dens, axis=2, weights=temp)
+cdens_wtemp = amrtools.get_cdens("dens", axis=2, weights_field = "temp")
 ```
 
 ### Optional routines
@@ -119,6 +102,25 @@ vel = amrtools.get_vector_cube("vel")
 ```
 
 This will return a 4D array consisting of a 3-D array in each direction.
+
+### Further initialisation routines
+
+Optionally, one can specify a particular region of interest to look into. The units should be the same as with those defined in your simulation:
+
+```
+# optional, if one wants to look at a specific region
+xmin = np.array([2.8931249e+20, -5.78625013e+20, -1.9287499e+20], dtype=np.float32)
+xmax = np.array([6.7506249e+20, -1.92874993e+20,  1.9287499e+20], dtype=np.float32)
+
+amrtools = AMRTools(filename, xmin, xmax)
+```
+
+One can also optionally force a region to have maximum / minimum refinement by passing the following arguments:
+
+```
+amrtools = AMRTools(filename, xmin, xmax, max_ref_given=10, min_ref_given=3)
+```
+which may be useful to conserve memory.
 
 ## License
 This code is under the BSD3 license. See [LICENSE](https://github.com/kwat0308/flash-amr-tools/blob/main/LICENSE) for more details.

@@ -193,11 +193,11 @@ class AMRTools:
         return field_arr
     
 
-    def get_slice(self, data, pos : float = 0.0, axis : int = 2):
+    def get_slice(self, field : str, pos : float = 0.0, axis : int = 2):
         '''
         Get the slice of the data at the current position.
 
-        - data: array of shape (nblocks, bx, by, bz) containing the data
+        - field: field variable of the data we want to extract. name must follow the convention from flash.par
 
         - pos: 3-D vector of the position we want to slice at
 
@@ -206,6 +206,15 @@ class AMRTools:
 
         # safety features
         assert axis in [0,1,2], f"Axis {axis} is not 0, 1, or 2 (x, y or z)."
+
+        # extract refinement level & field
+        with h5py.File(self.fname, "r") as pf:
+            ref_lvl = pf['refine level'][()][self.blist]
+
+            if field not in list(pf.keys()):
+                raise KeyError(f"{field} not found in {self.fname}!")
+            
+            data = pf[field][()][self.blist]
 
         bshape = data.shape[1:4]
 
@@ -235,10 +244,6 @@ class AMRTools:
         tmp_id = tmp_id.astype(int)
         # Create array where we store our slice
         sl_ax = np.zeros((int(bn[ax[0]]) * 2**(self.max_lvl+3), int(bn[ax[1]]) * 2**(self.max_lvl+3)))
-
-        # extract refinement level locally
-        with h5py.File(self.fname, "r") as pf:
-            ref_lvl = pf['refine level'][()][self.blist]
 
         # Shift the refinement level such that it represent the differen to the highest level
         ref_lvl = self.max_ref - ref_lvl
@@ -271,23 +276,43 @@ class AMRTools:
 
         return sl_ax
     
-    def get_cdens(self, data, axis : int = 2, weights=None):
+    def get_cdens(self, field : str, axis : int = 2, weights_field : str = ""):
         '''
         Get the column density of the data along the axis.
 
         NB: Only on-axis projections are currently supported.
 
-        - data: array of shape (nblocks, bx, by, bz) containing the data
+        - field: field variable of the data we want to extract. name must follow the convention from flash.par
 
         - axis: the axis in which we want to project onto.
 
-        - weights: optional argument to add weights to the projection. Must be the same shape as data.
+        - weights_field: optional argument to add weights to the projection. name must follow the convention from flash.par
         '''
+        # internal flag to check if we use weights or not
+        use_weights = False
 
         # safety features
         assert axis in [0,1,2], f"Axis {axis} is not 0, 1, or 2 (x, y or z)."
 
-        if weights != None:
+        # extract refinement level & field
+        with h5py.File(self.fname, "r") as pf:
+            ref_lvl = pf['refine level'][()][self.blist]
+
+            if field not in list(pf.keys()):
+                raise KeyError(f"{field} not found in {self.fname}!")
+            
+            data = pf[field][()][self.blist]
+
+            # extract the weights if an argument is given
+            if weights_field != "":
+                if weights_field not in list(pf.keys()):
+                    raise KeyError(f"{weights_field} not found in {self.fname}!")
+                
+                weights = pf[weights_field][()][self.blist]
+                use_weights = True
+
+
+        if use_weights:
             assert data.shape == weights.shape, f"shape of weights {weights.shape} != shape of data {data.shape}."
 
         # Get the number of base blocks in remaining axis
@@ -300,17 +325,13 @@ class AMRTools:
         coords = np.round((self.bbox[:, :, 0] - self.bbox[0, :, 0]) / self.bsize.min())
         coords = coords.astype(int) * 8
 
-        # extract refinement level locally
-        with h5py.File(self.fname, "r") as pf:
-            ref_lvl = pf['refine level'][()][self.blist]
-
         # Shift the refinement level such that it represent the differen to the highest level
         ref_lvl = self.max_ref - ref_lvl
 
         sh = data.shape
 
-        use_weights = False
-        if weights != None:
+        
+        if use_weights:
             norm = np.zeros((int(bn[0]) * 2**(self.max_lvl+3), int(bn[1]) * 2**(self.max_lvl+3)), dtype=data.dtype)
             use_weights = True
 
@@ -454,7 +475,7 @@ class AMRTools:
         print('Extending region to fit amr structure at level %s.' % min_ref)
         blist_minref, bx, by, bz, bmax = self._find_blocks(
             block_list=blist_raw, min_ref_lvl=min_ref, max_ref_lvl=max_ref, block_size=block_size, brlvl=brlvl, bsmin=bsmin,
-            coords=coords, gid=gid, refine_level=refine_level, center=(xmin+xmax)/2., cuboid=cuboid
+            coords=coords, gid=gid, refine_level=refine_level, center=(xmin+xmax)/2., is_cuboid=is_cuboid
         )
 
         while np.any([bx != bmax, by != bmax, bz != bmax]):
@@ -464,7 +485,7 @@ class AMRTools:
 
             blist_minref, bx, by, bz, bmax = self._find_blocks(
                 block_list=blist_raw2, min_ref_lvl=min_ref2, max_ref_lvl=max_ref, block_size=block_size, brlvl=brlvl2,
-                bsmin=bsmin, coords=coords, gid=gid, refine_level=refine_level, center=(xmin + xmax) / 2., cuboid=cuboid
+                bsmin=bsmin, coords=coords, gid=gid, refine_level=refine_level, center=(xmin + xmax) / 2., is_cuboid=is_cuboid
             )
 
             if is_cuboid and type(blist_minref) != int:
@@ -492,7 +513,7 @@ class AMRTools:
                 print('Could not extend region far enough. Extending again at level %s' % min_ref)
                 blist_minref, bx, by, bz, bmax = self._find_blocks(
                     block_list=blist_raw, min_ref_lvl=min_ref, max_ref_lvl=max_ref, block_size=block_size, brlvl=brlvl,
-                    bsmin=bsmin, coords=coords, gid=gid, refine_level=refine_level, center=(xmin+xmax)/2., cuboid=cuboid
+                    bsmin=bsmin, coords=coords, gid=gid, refine_level=refine_level, center=(xmin+xmax)/2., is_cuboid=is_cuboid
                 )
 
                 if is_cuboid and type(blist_minref) != int:
@@ -508,7 +529,7 @@ class AMRTools:
 
         blist_maxref, b_tot_nr = self._create_blists(
             minref_blist=blist_minref, block_level=blvl, gid=gid, coords=coords, max_ref_lvl=max_ref,
-            bnx=bx, bny=by, bnz=bz, cuboid=is_cuboid
+            bnx=bx, bny=by, bnz=bz, is_cuboid=is_cuboid
         )
 
         if not is_cuboid:
@@ -550,7 +571,7 @@ class AMRTools:
         return bgrid
     
 
-    def _create_blists(self, minref_blist, max_ref_lvl, block_level, gid, coords, bnx=0, bny=0, bnz=0, cuboid=False):
+    def _create_blists(self, minref_blist, max_ref_lvl, block_level, gid, coords, bnx=0, bny=0, bnz=0, is_cuboid=False):
         '''Sort all blocks at minimum refinement level and replace block with their higher refinement level counterparts.'''
 
         # Put the block of the minimum refinement level on a grid correspoding to their coordinates.
@@ -560,7 +581,7 @@ class AMRTools:
         print('Block shape: ', blist_minsort_tmp.shape)
         blist_minsort = []
         # Add blocks in amr order to list.
-        if cuboid:
+        if is_cuboid:
             blist_minsort = blist_minsort_tmp.swapaxes(0, 2).flatten()
         else:
             for pos in zenumerate(blist_minsort_tmp.shape):
@@ -672,7 +693,7 @@ class AMRTools:
     
     # Find all blocks at lowest refinement level which are correspoding to our initial guess
     def _find_blocks(
-        self, block_list, min_ref_lvl, max_ref_lvl, brlvl, coords, block_size, bsmin, refine_level, gid, center, cuboid=False):
+        self, block_list, min_ref_lvl, max_ref_lvl, brlvl, coords, block_size, bsmin, refine_level, gid, center, is_cuboid=False):
 
         # For all block which are higher than our set refinement level find the lowest parent which is fulfills our
         # requested refinement level.
@@ -717,7 +738,7 @@ class AMRTools:
             print(minref_blist.shape)
             return 1, 1, 1, 1, 2
             # sys.exit('Could not find enough blocks to fill cuboid.')
-        elif cuboid:
+        elif is_cuboid:
             return minref_blist, bnx, bny, bnz, bnmax
 
         # For each round add blocks at at least one side to reach the maximum number of blocks for amr tree.
