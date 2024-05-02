@@ -13,15 +13,24 @@ class AMRTools:
             fname: str,
             xmin=np.array([], dtype=np.float32),
             xmax=np.array([], dtype=np.float32),
+            is_cuboid=True,
+            max_ref_given=None,
+            min_ref_given=None,
     ):
         '''
         Toolkit to convert from AMR data in FLASH -> Uniform data
 
-        - fname: the filename of the FLASH output file. needs to be a .h5 file
+        - fname (str): the filename of the FLASH output file. needs to be a .h5 file
 
-        - xmin: the lower corner of the region of interest. defaults to empty list, which uses the whole domain
+        - xmin (3D vector): the lower corner of the region of interest. defaults to empty list, which uses the whole domain
 
-        - xmax: the upper corner of the region of interest. defaults to empty list, which uses the whole domain
+        - xmax (3D vector): the upper corner of the region of interest. defaults to empty list, which uses the whole domain
+
+        - is_cuboid (bool): set to True if the region is not a cube. Defaults to True.
+
+        - max_ref_given (int): force the maximum refinement level of the blocks. Defaults to None, which uses the maximum refinement level in the simulation.
+
+        - min_ref_given (int): force the minimum refinement level of the blocks. Defaults to None, which uses the minimum refinement level in the simulation.
 
         '''
         self.fname = fname  # filename of interest
@@ -33,7 +42,7 @@ class AMRTools:
             raise FileNotFoundError(f"File {self.fname} is not found!")
         
         # gets the complete list of blocks which are in the box chosen with xmin and xmax 
-        bmin, bmax, blist, bnx, bny, bnz = self._get_true_blocks()
+        bmin, bmax, blist, bnx, bny, bnz = self._get_true_blocks(is_cuboid, max_ref_given, min_ref_given)
 
         # NB: typecasting here for safety
         self.min_ref = int(bmin)    # minimum refinement level in block list
@@ -57,22 +66,6 @@ class AMRTools:
         self.max_lvl = self.max_ref - self.min_ref    # maximum level
 
 
-    def get_data(self, field : str = "dens"):
-        '''
-        Get the field data from the h5 file
-        
-        - field: field variable of the data we want to extract. defaults to "dens".
-        '''
-        
-        with h5py.File(self.fname, "r") as pf:
-            if field not in list(pf.keys()):
-                raise KeyError(f"{field} not found in {self.fname}!")
-            
-            field_arr = pf[field][()][self.blist]
-
-        return field_arr
-
-
     def calc_cube_size(self, dtype=np.float32):
         '''
         Calculate the size of the cube in cell units
@@ -82,28 +75,31 @@ class AMRTools:
         cells = self.bnx * 2**(self.max_lvl+3) * self.bny * 2**(self.max_lvl+3) * self.bnz * 2**(self.max_lvl+3)
         return cells * np.dtype(dtype).itemsize
     
-    def get_cube(self, data):
+    def get_cube(self, field : str):
         '''
         Get the data as a 3-D uniform cube.
 
-        - data: array of shape (nblocks, bx, by, bz) containing the data
+        - field: field variable of the data we want to extract. name must follow the convention from flash.par
         '''
         
         bs = self.bsize.min(axis=0)
         coords = np.round((self.bbox[:, :, 0] - self.bbox[0, :, 0]) / bs)
         coords = coords.astype(int) * 8
 
-        # extract refinement level locally
+        # extract refinement level and data
         with h5py.File(self.fname, "r") as pf:
             ref_lvl = pf['refine level'][()][self.blist]
+
+            if field not in list(pf.keys()):
+                raise KeyError(f"{field} not found in {self.fname}!")
+            
+            data = pf[field][()][self.blist]
         
         ref_lvl = self.max_ref - ref_lvl
         
         cube = np.zeros((self.bnx * 2**(self.max_lvl+3), self.bny * 2**(self.max_lvl+3), self.bnz * 2**(self.max_lvl+3)), dtype=data.dtype)
 
         for i in range(len(data)):
-            if i%100 == 0:
-                print(i, data.shape[0])
             x, y, z = coords[i]
             
             diff = 2**(ref_lvl[i])
@@ -117,24 +113,84 @@ class AMRTools:
             
         return cube
     
-    def get_vector_cube(self, data_vec):
+    def get_reflvl_cube(self):
+        '''
+        Get the refinement level as a 3-D uniform cube.
+        '''
+        
+        bs = self.bsize.min(axis=0)
+        coords = np.round((self.bbox[:, :, 0] - self.bbox[0, :, 0]) / bs)
+        coords = coords.astype(int) * 8
+
+        # extract refinement level locally
+        with h5py.File(self.fname, "r") as pf:
+            ref_lvl = pf['refine level'][()][self.blist]
+        
+        ref_lvl = self.max_ref - ref_lvl
+        
+        cube = np.zeros((self.bnx * 2**(self.max_lvl+3), self.bny * 2**(self.max_lvl+3), self.bnz * 2**(self.max_lvl+3)), dtype=ref_lvl.dtype)
+
+        for i in range(len(ref_lvl)):
+            x, y, z = coords[i]
+            
+            diff = 2**(ref_lvl[i]+3)
+            
+            data_reshape = np.repeat(ref_lvl[i], diff, axis=0)
+            data_reshape = np.repeat(data_reshape, diff, axis=1)
+            data_reshape = np.repeat(data_reshape, diff, axis=2)
+            
+            sub_cube_size = int(2**(ref_lvl[i] + 3))
+            cube[x:x+sub_cube_size, y:y+sub_cube_size, z:z+sub_cube_size] = data_reshape.T
+            
+        return cube
+    
+    def get_vector_cube(self, field : str):
         '''
         Get the data as a 3-dimensional list of 3-D uniform cubes for vector data.
 
-        - data_vec: list of arrays of shape (nblocks, bx, by, bz) containing the data
+        - field: field variable of the data we want to extract.
+        Note:
+            - the field variable must be of length 3 (ex. "vel" or "mag")
+            - the field variable name must be contained in flash.par, with suffixes of "x", "y", "z" as the fourth letter
         '''
+
+        vector_suffixes = ["x", "y", "z"]
+        field_veclabels = [field + vsf for vsf in vector_suffixes]
+
+        # extract refinement level and data
+        with h5py.File(self.fname, "r") as pf:
+            if np.all(field_veclabels not in list(pf.keys())):
+                raise KeyError(f"{field} not found in {self.fname}!")
+
+            # get the data type of one entry
+            field_dtype = pf[field_veclabels[0]][()].dtype
 
         vec_cube = np.zeros((
             self.bnx * 2 ** (self.max_lvl + 3),
             self.bny * 2 ** (self.max_lvl + 3),
             self.bnz * 2 ** (self.max_lvl + 3),
             3
-        ), dtype=data_vec[0].dtype)
+        ), dtype=field_dtype)
 
         for i in range(3):
-            vec_cube[..., i] = self.get_cube(data_vec[i])
+            vec_cube[..., i] = self.get_cube(field_veclabels[i])
 
         return vec_cube
+    
+    def get_data(self, field : str):
+        '''
+        Get the field data from the h5 file
+        
+        - field: field variable of the data we want to extract. name must follow the convention from flash.par
+        '''
+        
+        with h5py.File(self.fname, "r") as pf:
+            if field not in list(pf.keys()):
+                raise KeyError(f"{field} not found in {self.fname}!")
+            
+            field_arr = pf[field][()][self.blist]
+
+        return field_arr
     
 
     def get_slice(self, data, pos : float = 0.0, axis : int = 2):
@@ -236,7 +292,7 @@ class AMRTools:
 
         # Get the number of base blocks in remaining axis
         bn = [self.bnx, self.bny, self.bnz]
-        bn_ax = bn.pop(axis)
+        _ = bn.pop(axis)
 
         ax = [0, 1, 2]
         ax.pop(axis)
@@ -285,11 +341,11 @@ class AMRTools:
         return cdens 
     
 
-    def _get_true_blocks(self, cuboid=True, max_ref_given=None, min_ref_given=None):
+    def _get_true_blocks(self, is_cuboid=True, max_ref_given=None, min_ref_given=None):
         '''
         Extract the complete list of blocks which are in the box chosen within xmin and xmax. In particular, it sets the minimum & maximum refinement within the block list, and the number of blocks in x, y, z on the lowest refinement level.
         
-        - cuboid (boolean): set to True if the region is not a cube. Defaults to True.
+        - is_cuboid (boolean): set to True if the region is not a cube. Defaults to True.
 
         - max_ref_given (int): force the maximum refinement level of the blocks. Defaults to None, which uses the maximum refinement level in the simulation.
 
@@ -411,7 +467,7 @@ class AMRTools:
                 bsmin=bsmin, coords=coords, gid=gid, refine_level=refine_level, center=(xmin + xmax) / 2., cuboid=cuboid
             )
 
-            if cuboid and type(blist_minref) != int:
+            if is_cuboid and type(blist_minref) != int:
                 min_ref = min_ref2
                 brlvl = brlvl2
                 blist_raw = blist_raw2
@@ -439,10 +495,10 @@ class AMRTools:
                     bsmin=bsmin, coords=coords, gid=gid, refine_level=refine_level, center=(xmin+xmax)/2., cuboid=cuboid
                 )
 
-                if cuboid and type(blist_minref) != int:
+                if is_cuboid and type(blist_minref) != int:
                     break
 
-        if cuboid:
+        if is_cuboid:
             blvl = min_ref
         else:
             blvl = min_ref - np.int32(np.round(np.log2(bmax)))
@@ -452,10 +508,10 @@ class AMRTools:
 
         blist_maxref, b_tot_nr = self._create_blists(
             minref_blist=blist_minref, block_level=blvl, gid=gid, coords=coords, max_ref_lvl=max_ref,
-            bnx=bx, bny=by, bnz=bz, cuboid=cuboid
+            bnx=bx, bny=by, bnz=bz, cuboid=is_cuboid
         )
 
-        if not cuboid:
+        if not is_cuboid:
             b_tot_nr += np.sum(np.logspace(start=0., stop=np.log2(bmax)-1, base=2, num=int(np.log2(bmax)))**3).astype(int)
 
         print('Total number of blocks including parent blocks: %s' % b_tot_nr)
