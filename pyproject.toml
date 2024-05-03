@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flash_amr_tools"
-version = "0.0.15"
+version = "0.0.16"
 authors = [
   { name="Keito Watanabe", email="k.wat8973@gmail.com" },
   { name="Pierre Nürnberger", email="nuernb@ph1.uni-koeln.de"},
@@ -13,12 +13,16 @@ description = "Small tool to create uniform data cubes of FLASH datasets. Port f
 readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.0"
-classifiers = [
-    "Programming Language :: Python :: 3",
-]
 dependencies = [
   "numpy",
   "h5py",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+    "urllib",
 ]
 
 [project.urls]

@@ -72,6 +72,25 @@ cdens_wtemp = amrtools.get_cdens("dens", axis=2, weights_field = "temp")
 
 ### Optional routines
 
+#### Further initialisation routines
+
+Optionally, one can specify a particular region of interest to look into. The units should be the same as with those defined in your simulation:
+
+```
+# optional, if one wants to look at a specific region
+xmin = np.array([2.8931249e+20, -5.78625013e+20, -1.9287499e+20], dtype=np.float32)
+xmax = np.array([6.7506249e+20, -1.92874993e+20,  1.9287499e+20], dtype=np.float32)
+
+amrtools = AMRTools(filename, xmin, xmax)
+```
+
+One can also optionally force a region to have maximum / minimum refinement by passing the following arguments:
+
+```
+amrtools = AMRTools(filename, xmin, xmax, max_ref_given=10, min_ref_given=3)
+```
+which may be useful to conserve memory.
+
 #### Extracting data with preserved AMR structure
 
 If you want to retrive the data **not** as a uniform cube, this can be done with the following function call:
@@ -102,25 +121,6 @@ vel = amrtools.get_vector_cube("vel")
 ```
 
 This will return a 4D array consisting of a 3-D array in each direction.
-
-### Further initialisation routines
-
-Optionally, one can specify a particular region of interest to look into. The units should be the same as with those defined in your simulation:
-
-```
-# optional, if one wants to look at a specific region
-xmin = np.array([2.8931249e+20, -5.78625013e+20, -1.9287499e+20], dtype=np.float32)
-xmax = np.array([6.7506249e+20, -1.92874993e+20,  1.9287499e+20], dtype=np.float32)
-
-amrtools = AMRTools(filename, xmin, xmax)
-```
-
-One can also optionally force a region to have maximum / minimum refinement by passing the following arguments:
-
-```
-amrtools = AMRTools(filename, xmin, xmax, max_ref_given=10, min_ref_given=3)
-```
-which may be useful to conserve memory.
 
 ## License
 This code is under the BSD3 license. See [LICENSE](https://github.com/kwat0308/flash-amr-tools/blob/main/LICENSE) for more details.

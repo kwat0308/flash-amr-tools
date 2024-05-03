@@ -39,7 +39,7 @@ class AMRTools:
 
         # makes sure that the filename exists
         if not os.path.exists(self.fname):
-            raise FileNotFoundError(f"File {self.fname} is not found!")
+            raise FileNotFoundError("File %s is not found!" % self.fname)
         
         # gets the complete list of blocks which are in the box chosen with xmin and xmax 
         bmin, bmax, blist, bnx, bny, bnz = self._get_true_blocks(is_cuboid, max_ref_given, min_ref_given)
@@ -91,7 +91,7 @@ class AMRTools:
             ref_lvl = pf['refine level'][()][self.blist]
 
             if field not in list(pf.keys()):
-                raise KeyError(f"{field} not found in {self.fname}!")
+                raise KeyError("Field %s not found in %s!" % (field, self.fname))
             
             data = pf[field][()][self.blist]
         
@@ -160,7 +160,7 @@ class AMRTools:
         # extract refinement level and data
         with h5py.File(self.fname, "r") as pf:
             if np.all(field_veclabels not in list(pf.keys())):
-                raise KeyError(f"{field} not found in {self.fname}!")
+                raise KeyError("Field %s not found in %s!" % (field, self.fname))
 
             # get the data type of one entry
             field_dtype = pf[field_veclabels[0]][()].dtype
@@ -186,7 +186,7 @@ class AMRTools:
         
         with h5py.File(self.fname, "r") as pf:
             if field not in list(pf.keys()):
-                raise KeyError(f"{field} not found in {self.fname}!")
+                raise KeyError("Field %s not found in %s!" % (field, self.fname))
             
             field_arr = pf[field][()][self.blist]
 
@@ -205,14 +205,14 @@ class AMRTools:
         '''
 
         # safety features
-        assert axis in [0,1,2], f"Axis {axis} is not 0, 1, or 2 (x, y or z)."
+        assert axis in [0,1,2], "Axis %d is not 0, 1, or 2 (x, y or z)." % axis
 
         # extract refinement level & field
         with h5py.File(self.fname, "r") as pf:
             ref_lvl = pf['refine level'][()][self.blist]
 
             if field not in list(pf.keys()):
-                raise KeyError(f"{field} not found in {self.fname}!")
+                raise KeyError("Field %s not found in %s!" % (field, self.fname))
             
             data = pf[field][()][self.blist]
 
@@ -299,21 +299,21 @@ class AMRTools:
             ref_lvl = pf['refine level'][()][self.blist]
 
             if field not in list(pf.keys()):
-                raise KeyError(f"{field} not found in {self.fname}!")
+                raise KeyError("Field %s not found in %s!" % (field, self.fname))
             
             data = pf[field][()][self.blist]
 
             # extract the weights if an argument is given
             if weights_field != "":
                 if weights_field not in list(pf.keys()):
-                    raise KeyError(f"{weights_field} not found in {self.fname}!")
+                    raise KeyError("Field %s not found in %s!" % (weights_field, self.fname))
                 
                 weights = pf[weights_field][()][self.blist]
                 use_weights = True
 
 
         if use_weights:
-            assert data.shape == weights.shape, f"shape of weights {weights.shape} != shape of data {data.shape}."
+            assert data.shape == weights.shape, "shape of weights " + weights.shape + " != shape of data " + data.shape + " ."
 
         # Get the number of base blocks in remaining axis
         bn = [self.bnx, self.bny, self.bnz]
