@@ -159,8 +159,9 @@ class AMRTools:
 
         # extract refinement level and data
         with h5py.File(self.fname, "r") as pf:
-            if np.all(field_veclabels not in list(pf.keys())):
-                raise KeyError("Field %s not found in %s!" % (field, self.fname))
+            for field_veclabel in field_veclabels:
+                if field_veclabel not in list(pf.keys()):
+                    raise KeyError("Field %s not found in %s!" % (field_veclabel, self.fname))
 
             # get the data type of one entry
             field_dtype = pf[field_veclabels[0]][()].dtype

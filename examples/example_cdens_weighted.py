@@ -1,6 +1,6 @@
 '''Basic example to run amr tools'''
 
-from flash_amr_tools.amr_tools import AMRTools
+from flash_amr_tools import AMRTools
 import numpy as np
 
 #################################################

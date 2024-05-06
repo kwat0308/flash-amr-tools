@@ -1,5 +1,5 @@
 '''Basic example to run amr tools'''
-from flash_amr_tools.amr_tools import AMRTools
+from flash_amr_tools import AMRTools
 import numpy as np
 import h5py
 
@@ -9,17 +9,16 @@ this_dir = os.path.dirname(os.path.realpath(__file__))
 import pytest
 import urllib.request
 
-def get_sedov_datafile():
-    # import sedov data from yt hub
-    fname, _ = urllib.request.urlretrieve("https://hub.yt/api/v1/item/577c13b50d7c6b0001ad63f1/download", filename=os.path.join(this_dir,"sedov_hdf5_chk_0003"))
-    return fname
-
-
 @pytest.fixture
 def sedov_cube_data():
     f = h5py.File(os.path.join(this_dir, "sedov_cube_data.h5"), "r")
     yield f
     f.close()
+
+def get_sedov_datafile():
+    # import sedov data from yt hub
+    fname, _ = urllib.request.urlretrieve("https://hub.yt/api/v1/item/577c13b50d7c6b0001ad63f1/download", filename=os.path.join(this_dir,"sedov_hdf5_chk_0003"))
+    return fname
 
 
 def test_dims(sedov_cube_data):
