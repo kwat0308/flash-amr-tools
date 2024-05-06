@@ -1,0 +1,4 @@
+# requirements for flash-amr-tools
+numpy
+h5py
+flash-amr-tools
