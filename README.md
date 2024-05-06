@@ -22,12 +22,12 @@ pip install flash-amr-tools
 filename = "SILCC_hdf5_plt_cnt_0150"
 ```
 
-2. Initialise the `AMRTools` object:
+2. Initialise the `AMRToolkit` object:
 
 ```
-from flash_amr_tools.amr_tools import AMRTools
+from flash_amr_tools import AMRToolkit
 
-amrtools = AMRTools(filename)
+toolkit = AMRToolkit(filename)
 ```
 
 The initialisation will calculate the complete list of blocks, the minimum and maximum refinement of the whole domain, and the number of blocks in each dimension.
@@ -36,7 +36,7 @@ The initialisation will calculate the complete list of blocks, the minimum and m
 
 ```
 # ex. density
-dens = amrtools.get_cube("dens")
+dens = toolkit.get_cube("dens")
 ```
 
 Note that the naming convention of the argument must follow the variable name in `flash.par`. This now transforms the density as a cube with gridsizes following the highest resolution.
@@ -51,7 +51,7 @@ To retrive the slice, we require the field name (as specified in `flash.par`), t
 
 ```
 # ex. density slice along the mid-plane
-dens_sl = amrtools.get_slice("dens", pos=0.0, axis=2)
+dens_sl = toolkit.get_slice("dens", pos=0.0, axis=2)
 ```
 
 #### On-Axis Projections
@@ -60,14 +60,14 @@ To obtain the projection, we require the field name (as specified in `flash.par`
 
 ```
 # ex. column density along the z-axis
-cdens = amrtools.get_cdens("dens", axis=2)
+cdens = toolkit.get_cdens("dens", axis=2)
 ```
 
 Optionally, one can also specify weights to have weighted projections instead. Note that the field name for the weights must also be specified as in `flash.par`
 
 ```
 # ex. temperature-weighted projection along the z-axis
-cdens_wtemp = amrtools.get_cdens("dens", axis=2, weights_field = "temp")
+cdens_wtemp = toolkit.get_cdens("dens", axis=2, weights_field = "temp")
 ```
 
 ### Optional routines
@@ -81,13 +81,13 @@ Optionally, one can specify a particular region of interest to look into. The un
 xmin = np.array([2.8931249e+20, -5.78625013e+20, -1.9287499e+20], dtype=np.float32)
 xmax = np.array([6.7506249e+20, -1.92874993e+20,  1.9287499e+20], dtype=np.float32)
 
-amrtools = AMRTools(filename, xmin, xmax)
+toolkit = AMRToolkit(filename, xmin, xmax)
 ```
 
 One can also optionally force a region to have maximum / minimum refinement by passing the following arguments:
 
 ```
-amrtools = AMRTools(filename, xmin, xmax, max_ref_given=10, min_ref_given=3)
+toolkit = AMRToolkit(filename, xmin, xmax, max_ref_given=10, min_ref_given=3)
 ```
 which may be useful to conserve memory.
 
@@ -97,7 +97,7 @@ If you want to retrive the data **not** as a uniform cube, this can be done with
 
 ```
 # ex. density
-dens = amrtools.get_data("dens")
+dens = toolkit.get_data("dens")
 ```
 
 This returns the data that is still preserving the AMR structure, which can be useful for ex. scatter plots.
@@ -107,7 +107,7 @@ This returns the data that is still preserving the AMR structure, which can be u
 One can also retrieve the refinement level as a uniform grid as well:
 
 ```
-reflvl_cube = amrtools.get_reflvl_cube()
+reflvl_cube = toolkit.get_reflvl_cube()
 ```
 
 which can be used for (for example) plotting the AMR mesh grid.
@@ -117,7 +117,7 @@ which can be used for (for example) plotting the AMR mesh grid.
 One can also retrive a uniform grid of vector quantities (ex. velocity, magnetic field) from the following:
 
 ```
-vel = amrtools.get_vector_cube("vel")
+vel = toolkit.get_vector_cube("vel")
 ```
 
 This will return a 4D array consisting of a 3-D array in each direction.

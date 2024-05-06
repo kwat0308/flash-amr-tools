@@ -3,7 +3,7 @@ import os, sys
 import h5py
 from .zorder import zenumerate
 
-class AMRTools:
+class AMRToolkit:
     '''
     Toolkit to convert from AMR data in FLASH -> Uniform data
     '''

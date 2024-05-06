@@ -1,5 +1,5 @@
 '''Basic example to run amr tools'''
-from flash_amr_tools import AMRTools
+from flash_amr_tools import AMRToolkit
 import numpy as np
 import h5py
 
@@ -27,11 +27,11 @@ def test_dims(sedov_cube_data):
     # get data first
     filename = get_sedov_datafile()
 
-    # initialise amrtools
-    amrtools = AMRTools(filename)
+    # initialise the AMR toolkit
+    toolkit = AMRToolkit(filename)
 
     # compute cube
-    dens_cube = amrtools.get_cube("dens")
+    dens_cube = toolkit.get_cube("dens")
     
     # check the dimensionality
     assert np.all(dens_cube.shape == sedov_cube_data["dims"][()]), "Dimensions " + dens_cube.shape + " != " + sedov_cube_data["dims"] + "!"
@@ -42,11 +42,11 @@ def test_cube(sedov_cube_data):
     # get data first
     filename = get_sedov_datafile()
 
-    # initialise amrtools
-    amrtools = AMRTools(filename)
+     # initialise the AMR toolkit
+    toolkit = AMRToolkit(filename)
 
     # compute cube
-    dens_cube = amrtools.get_cube("dens")
+    dens_cube = toolkit.get_cube("dens")
 
     # check if data is close enough to true data
     assert np.all(np.isclose(dens_cube, sedov_cube_data["cube"][()])), "Cube data does not align!"
@@ -57,11 +57,11 @@ def test_slice(sedov_cube_data):
     # get data first
     filename = get_sedov_datafile()
 
-    # initialise amrtools
-    amrtools = AMRTools(filename)
+     # initialise the AMR toolkit
+    toolkit = AMRToolkit(filename)
 
     # compute slice
-    dens_sl = amrtools.get_slice("dens", pos=0.5, axis=2)
+    dens_sl = toolkit.get_slice("dens", pos=0.5, axis=2)
 
     # check if data is close enough to true data
     assert np.all(np.isclose(dens_sl, sedov_cube_data["sl"][()])), "Slice data does not align!"
@@ -73,11 +73,11 @@ def test_cdens(sedov_cube_data):
     # get data first
     filename = get_sedov_datafile()
 
-    # initialise amrtools
-    amrtools = AMRTools(filename)
+     # initialise the AMR toolkit
+    toolkit = AMRToolkit(filename)
 
     # compute column density
-    dens_cdens = amrtools.get_cdens("dens", axis=2)
+    dens_cdens = toolkit.get_cdens("dens", axis=2)
 
     # check if data is close enough to true data
     assert np.all(np.isclose(dens_cdens, sedov_cube_data["cdens"][()])), "Column density data does not align!"
