@@ -1,41 +1,46 @@
 '''Basic example to run amr tools'''
 
-from flash_amr_tools import AMRToolkit
+import flash_amr_tools
 import numpy as np
+import h5py
 
 #################################################
-# INPUT YOUR FILENAME HERE
+# INPUT YOUR FILENAME & REGION OF INTEREST HERE
 #################################################
 
 filename = "SILCC_hdf5_plt_cnt_0150"
 
+# Optional, defaults to the whole domain
+xmin = np.array([2.8931249e+20, -5.78625013e+20, -1.9287499e+20], dtype=np.float32)
+xmax = np.array([6.7506249e+20, -1.92874993e+20,  1.9287499e+20], dtype=np.float32)
+
 #################################################
 
-###### 1. Initialise the AMRToolkit object ########
+###### 1. Get the block list of region ########
 
-toolkit = AMRToolkit(filename)
-
-# optional, if one wants to look at a specific region
-# xmin = np.array([2.8931249e+20, -5.78625013e+20, -1.9287499e+20], dtype=np.float32)
-# xmax = np.array([6.7506249e+20, -1.92874993e+20,  1.9287499e+20], dtype=np.float32)
-
-# toolkit = AMRToolkit(filename, xmin, xmax)
-
-# optional, if one wants to force refinement levels
-# toolkit = AMRToolkit(filename, xmin, xmax, max_ref_given=10, min_ref_given=3)
+blist, brefs, bns = flash_amr_tools.get_true_blocks(filename, xmin, xmax)
 
 ##################################################
 
-###### 2. Get the data as uniform cube    ########
+###### 2. Get data within region of interest    ########
 
-dens = toolkit.get_cube("dens")
+# read in the data
+pf = h5py.File(filename)
+dens = pf["dens"][()][blist]  # ex. density
+ref_lvl = pf["refine level"][()][blist]
+bbox = pf["bounding box"][()][blist]
+bsize = pf["block size"][()][blist]
+pf.close()
 
 ##################################################
+
+###### 3. Transform data into uniform cube   ####
+dens_cube = flash_amr_tools.get_cube(dens, ref_lvl=ref_lvl, bbox=bbox, bsize=bsize, brefs=brefs, bns=bns)
 
 ###### 3. (Optional) Save your data       ########
 
 import h5py
 with h5py.File("./output.h5", "w") as f:
-    f.create_dataset("dens", data=dens)
+    f.create_dataset("dens_cube", data=dens_cube)
 
 ##################################################

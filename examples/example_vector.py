@@ -1,4 +1,4 @@
-'''Basic example to get weighted column density plot with amrtools'''
+'''Basic example to get vector data as uniform cube'''
 
 import flash_amr_tools
 import numpy as np
@@ -26,8 +26,7 @@ blist, brefs, bns = flash_amr_tools.get_true_blocks(filename, xmin, xmax)
 
 # read in the data
 pf = h5py.File(filename)
-dens = pf["dens"][()][blist]  # ex. density
-temp = pf["temp"][()][blist]  # temperature
+vel_vec = [pf["velx"][()][blist], pf["vely"][()][blist], pf["velz"][()][blist]] # ex. velocity
 ref_lvl = pf["refine level"][()][blist]
 bbox = pf["bounding box"][()][blist]
 bsize = pf["block size"][()][blist]
@@ -35,23 +34,13 @@ pf.close()
 
 ##################################################
 
-###### 2. Get the weighted column density ########
-##   (ex. temperature weighted along z-axis)  ####
+###### 3. Transform data into uniform cube   ####
+vel_cube = flash_amr_tools.get_vector_cube(vel_vec, ref_lvl=ref_lvl, bbox=bbox, bsize=bsize, brefs=brefs, bns=bns)
 
-weighted_cdens = flash_amr_tools.get_cdens(dens, axis=2, ref_lvl=ref_lvl, bbox=bbox, bsize=bsize, brefs=brefs, bns=bns, weights=temp)
+###### 3. (Optional) Save your data       ########
 
-##################################################
-
-###### 3. Plot the column density       ########
-
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-
-low_cor, up_cor = bbox[0,:,0], bbox[-1,:,1]
-
-extent = [low_cor[0], up_cor[0], low_cor[1], up_cor[1]]
-norm = mcolors.LogNorm(vmin=weighted_cdens.min(), vmax=weighted_cdens.max())
-
-plt.imshow(weighted_cdens.T, norm=norm, origin="lower", extent=extent)
+import h5py
+with h5py.File("./output.h5", "w") as f:
+    f.create_dataset("vel_cube", data=vel_cube)
 
 ##################################################
