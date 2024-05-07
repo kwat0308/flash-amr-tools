@@ -1,46 +1,57 @@
-'''Basic example to run amr tools'''
+'''Basic example to get weighted column density plot with amrtools'''
 
-from flash_amr_tools import AMRToolkit
+import flash_amr_tools
 import numpy as np
+import h5py
 
 #################################################
-# INPUT YOUR FILENAME HERE
+# INPUT YOUR FILENAME & REGION OF INTEREST HERE
 #################################################
 
 filename = "SILCC_hdf5_plt_cnt_0150"
 
+# Optional, defaults to the whole domain
+xmin = np.array([2.8931249e+20, -5.78625013e+20, -1.9287499e+20], dtype=np.float32)
+xmax = np.array([6.7506249e+20, -1.92874993e+20,  1.9287499e+20], dtype=np.float32)
+
 #################################################
 
-###### 1. Initialise the AMRTools object ########
+###### 1. Get the block list of region ########
 
-toolkit = AMRToolkit(filename)
-
-# optional, if one wants to look at a specific region
-# xmin = np.array([2.8931249e+20, -5.78625013e+20, -1.9287499e+20], dtype=np.float32)
-# xmax = np.array([6.7506249e+20, -1.92874993e+20,  1.9287499e+20], dtype=np.float32)
-
-# toolkit = AMRToolkit(filename, xmin, xmax)
-
-# optional, if one wants to force refinement levels
-# toolkit = AMRToolkit(filename, xmin, xmax, max_ref_given=10, min_ref_given=3)
+blist, brefs, bns = flash_amr_tools.get_true_blocks(filename, xmin, xmax)
 
 ##################################################
 
-###### 2. Get the weighted column density     ####
-#### (ex. temperature weighted along z-axis)  ####
+###### 2. Get data within region of interest    ########
 
-cdens_temp = toolkit.get_cdens("dens", axis=2, weights_field="temp")
+# read in the data
+pf = h5py.File(filename)
+dens = pf["dens"][()][blist]  # ex. density
+temp = pf["temp"][()][blist]  # temperature
+ref_lvl = pf["refine level"][()][blist]
+bbox = pf["bounding box"][()][blist]
+bsize = pf["block size"][()][blist]
+pf.close()
 
 ##################################################
 
-###### 3. Plot the column density       ##########
+###### 2. Get the weighted column density ########
+##   (ex. temperature weighted along z-axis)  ####
+
+weighted_cdens = flash_amr_tools.get_cdens(dens, axis=2, ref_lvl=ref_lvl, bbox=bbox, bsize=bsize, brefs=brefs, bns=bns, weights=temp)
+
+##################################################
+
+###### 3. Plot the column density       ########
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
-extent = [toolkit.low_cor[0], toolkit.up_cor[0], toolkit.low_cor[1], toolkit.up_cor[1]]
-norm = mcolors.LogNorm(vmin=cdens_temp.min(), vmax=cdens_temp.max())
+low_cor, up_cor = bbox[0,:,0], bbox[-1,:,1]
 
-plt.imshow(cdens_temp.T, norm=norm, origin="lower", extent=extent)
+extent = [low_cor[0], up_cor[0], low_cor[1], up_cor[1]]
+norm = mcolors.LogNorm(vmin=weighted_cdens.min(), vmax=weighted_cdens.max())
+
+plt.imshow(weighted_cdens.T, norm=norm, origin="lower", extent=extent)
 
 ##################################################

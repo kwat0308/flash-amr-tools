@@ -1,3 +1,3 @@
-from .amr_tools import AMRToolkit
+from .amr_tools import *
 
-__all__ = ["amr_tools", "zorder"]
+__all__ = ["amr_tools", "zorder", "block_tools"]

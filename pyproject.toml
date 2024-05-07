@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flash_amr_tools"
-version = "1.0.0dev1"
+version = "1.1.0"
 authors = [
   { name="Keito Watanabe", email="k.wat8973@gmail.com" },
   { name="Pierre Nürnberger", email="nuernb@ph1.uni-koeln.de"},
