@@ -240,9 +240,9 @@ def get_cube(data, ref_lvl, bbox, bsize, brefs, bns):
     max_lvl = bmax - bmin
     
     # computing the coordiante using the lower & upper corners divided by the smallest block size
-    bsize = bsize.min(axis=0)
-    coords = np.round((bbox[:, :, 0] - bbox[0, :, 0]) / bsize)
-    coords = coords.astype(int) * 8
+    bshape = data.shape[1:4]
+    coords = np.round((bbox[:, :, 0] - bbox[0, :, 0]) / bsize.min(axis=0))
+    coords = coords.astype(int) * bshape
     
     # shift refinement level by the maximum within the region of interest
     ref_lvl = bmax - ref_lvl
@@ -261,7 +261,7 @@ def get_cube(data, ref_lvl, bbox, bsize, brefs, bns):
         sub_cube_size = int(2**(ref_lvl[i] + 3))
         cube[x:x+sub_cube_size, y:y+sub_cube_size, z:z+sub_cube_size] = data_reshape.T
         
-    return cube.T
+    return cube
 
 
 def get_reflvl_cube(ref_lvl, bbox, bsize, brefs, bns):
@@ -282,8 +282,7 @@ def get_reflvl_cube(ref_lvl, bbox, bsize, brefs, bns):
     max_lvl = bmax - bmin
 
     # computing the coordiante using the lower & upper corners divided by the smallest block size
-    bsize = bsize.min(axis=0)
-    coords = np.round((bbox[:, :, 0] - bbox[0, :, 0]) / bsize)
+    coords = np.round((bbox[:, :, 0] - bbox[0, :, 0]) / bsize.min(axis=0))
     coords = coords.astype(int) * 8
     
     # shift refinement level by the maximum within the region of interest
@@ -303,7 +302,7 @@ def get_reflvl_cube(ref_lvl, bbox, bsize, brefs, bns):
         sub_cube_size = int(2 ** (ref_lvl[i]+3))
         cube[x:x + sub_cube_size, y:y + sub_cube_size, z:z + sub_cube_size] = data_reshape.T
 
-    return cube.T
+    return cube
 
 
 def get_vector_cube(data_vec, ref_lvl, bbox, bsize, brefs, bns):
@@ -381,26 +380,26 @@ def get_cdens(data, axis, ref_lvl, bbox, bsize, brefs, bns, weights=None):
     assert axis in [0,1,2], f"Axis {axis} is not 0, 1, or 2 (x, y or z)."
 
     # remove axis in which projection occrurs
-    bn_ax = bns.pop(axis)
     ax = [0, 1, 2]
     ax.pop(axis)
 
-    coords = np.round((bbox[:, :, 0] - bbox[0, :, 0]) / bsize.min())
-    coords = coords.astype(int) * 8
+    bshape = data.shape[1:4]
+    coords = np.round((bbox[:, :, 0] - bbox[0, :, 0]) / bsize.min(axis=0))
+    coords = coords.astype(int) * bshape
 
     ref_lvl = bmax - ref_lvl
     sh = data.shape
 
     use_weights = False
     if weights is not None:
-        norm = np.zeros((int(bns[0]) * 2**(max_lvl+3), int(bns[1]) * 2**(max_lvl+3)), dtype=data.dtype)
+        norm = np.zeros((int(bns[ax[0]]) * 2**(max_lvl+3), int(bns[ax[1]]) * 2**(max_lvl+3)), dtype=data.dtype)
 
         # make sure shape of weights is same as data
         assert data.shape == weights.shape, "shape of weights " + weights.shape + " != shape of data " + data.shape + " ."
 
         use_weights = True
 
-    cdens = np.zeros((int(bns[0]) * 2**(max_lvl+3), int(bns[1]) * 2**(max_lvl+3)), dtype=data.dtype)
+    cdens = np.zeros((int(bns[ax[0]]) * 2**(max_lvl+3), int(bns[ax[1]]) * 2**(max_lvl+3)), dtype=data.dtype)
 
     for i in range(len(data)):
         xyz = coords[i].tolist()
@@ -424,7 +423,7 @@ def get_cdens(data, axis, ref_lvl, bbox, bsize, brefs, bns, weights=None):
         cdens[xyz[0]:xyz[0]+sub_cube_size, xyz[1]:xyz[1]+sub_cube_size] += data_reshape
     if use_weights:
         cdens /= norm
-    return cdens.T 
+    return cdens
 
 
 def get_slice(data, pos, axis, ref_lvl, bbox, bsize, brefs, bns):
@@ -457,16 +456,13 @@ def get_slice(data, pos, axis, ref_lvl, bbox, bsize, brefs, bns):
     # we need to derive the axis we have for the data insertion seperately
     ax = [0, 1, 2]
     ax_c = ax.pop(axis)
-    pax = [2, 1, 0]
-    # This is the axis which we slice over
-    pax_c = pax.pop(axis)
     # Remaining axis are left for expansion if necessary
 
     # Derive coordinates from the lower corner of the bounding box
     coords = bbox[:, :, 0] - bbox[0, :, 0]
     # Shift the axis such that 0 in the selected axis is our required slice
     # Normalise to smallest block size
-    coords /= bsize.min()
+    coords /= bsize.min(axis=0)
     # Round values to get next cell position
     coords = np.round(coords)
     # Convert to integer as these are now direct indicies
@@ -490,7 +486,7 @@ def get_slice(data, pos, axis, ref_lvl, bbox, bsize, brefs, bns):
         diff = 2**(ref_lvl[i])
         
         # Check if our 0 index is within the range of the current block
-        if tmp_id[i] < 0 or tmp_id[i] >= 8:
+        if tmp_id[i] < 0 or tmp_id[i] >= bshape[axis]:
             continue
         
         # Create general slice array
@@ -505,4 +501,4 @@ def get_slice(data, pos, axis, ref_lvl, bbox, bsize, brefs, bns):
         # Store in slice array, needs to be transposed to convert from ZYX to XYZ
         sl_ax[xyz[0]:xyz[0]+sub_cube_size, xyz[1]:xyz[1]+sub_cube_size] = np.squeeze(data_reshape)
 
-    return sl_ax.T
+    return sl_ax
