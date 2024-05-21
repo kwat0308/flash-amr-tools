@@ -17,6 +17,7 @@ def get_true_blocks(
         is_cuboid=True,
         max_ref_given=None,
         min_ref_given=None,
+        verbose=True,
     ):
     '''
     Extract the complete list of blocks which are in the box chosen within xmin and xmax. In particular, it sets the minimum & maximum refinement within the block list, and the number of blocks in x, y, z on the lowest refinement level.
@@ -27,7 +28,7 @@ def get_true_blocks(
     - is_cuboid (bool): set to True if the region is not a cube. Defaults to True.
     - max_ref_given (int): force the maximum refinement level of the blocks. Defaults to None, which uses the maximum refinement level in the simulation.
     - min_ref_given (int): force the minimum refinement level of the blocks. Defaults to None, which uses the minimum refinement level in the simulation.
-
+    - verbose (bool) : show print statements or not.
 
     Returns:
     - blist (list) : the list of blocks that cover the region of interest 
@@ -85,9 +86,9 @@ def get_true_blocks(
             'xmin : %s\t%s\t%s\n' % tuple(xmin) +
             'xmax : %s\t%s\t%s\n' % tuple(xmax)
         )
-
-    print("minimum position of the region of interest: ", xmin)
-    print("maximum position of the region of interest: ", xmax)
+    if verbose:
+        print("minimum position of the region of interest: ", xmin)
+        print("maximum position of the region of interest: ", xmax)
 
     # Find all leaf blocks for inner and outer borders
     # Inner borders only includes blocks which center coordinate is included in selected region.
@@ -135,9 +136,10 @@ def get_true_blocks(
     max_ref_reg2 = brlvl2.max()
 
     max_ref = refine_level[ind].max()
-    print('Biggest block has refinement level: %s' % min_ref)
-    print('Highest refinement level in simulation: %s' % max_ref)
-    print('Highest refinement level in selected box: %s' % max_ref_reg)
+    if verbose:
+        print('Biggest block has refinement level: %s' % min_ref)
+        print('Highest refinement level in simulation: %s' % max_ref)
+        print('Highest refinement level in selected box: %s' % max_ref_reg)
 
     print('Extending region to fit amr structure at level %s.' % min_ref)
     blist_minref, bx, by, bz, bmax = find_blocks(
@@ -196,23 +198,24 @@ def get_true_blocks(
 
     blist_maxref, b_tot_nr = create_blists(
         minref_blist=blist_minref, block_level=blvl, gid=gid, coords=coords, max_ref_lvl=max_ref,
-        bnx=bx, bny=by, bnz=bz, is_cuboid=is_cuboid
+        bnx=bx, bny=by, bnz=bz, is_cuboid=is_cuboid, verbose=verbose,
     )
 
     if not is_cuboid:
         b_tot_nr += np.sum(np.logspace(start=0., stop=np.log2(bmax)-1, base=2, num=int(np.log2(bmax)))**3).astype(int)
 
-    print('Total number of blocks including parent blocks: %s' % b_tot_nr)
+    if verbose:
+        print('Total number of blocks including parent blocks: %s' % b_tot_nr)
 
-    boundariesl = np.min(coords[blist_maxref] - 0.5 * block_size[blist_maxref], axis=0)
-    boundariesr = np.max(coords[blist_maxref] + 0.5 * block_size[blist_maxref], axis=0)
-    print('Region extended to:\tlower\t\tupper')
-    print('\tx\t%+1.8e\t\t%+1.8e' % (boundariesl[0], boundariesr[0]))
-    print('\ty\t%+1.8e\t\t%+1.8e' % (boundariesl[1], boundariesr[1]))
-    print('\tz\t%+1.8e\t\t%+1.8e\n' % (boundariesl[2], boundariesr[2]))
+        boundariesl = np.min(coords[blist_maxref] - 0.5 * block_size[blist_maxref], axis=0)
+        boundariesr = np.max(coords[blist_maxref] + 0.5 * block_size[blist_maxref], axis=0)
+        print('Region extended to:\tlower\t\tupper')
+        print('\tx\t%+1.8e\t\t%+1.8e' % (boundariesl[0], boundariesr[0]))
+        print('\ty\t%+1.8e\t\t%+1.8e' % (boundariesl[1], boundariesr[1]))
+        print('\tz\t%+1.8e\t\t%+1.8e\n' % (boundariesl[2], boundariesr[2]))
 
-    print('Region center at:\t%+1.8e\t%+1.8e\t%+1.8e' % tuple((boundariesl+boundariesr)/2))
-    print('Given center:\t\t%+1.8e\t%+1.8e\t%+1.8e' % tuple((xmin+xmax)/2))
+        print('Region center at:\t%+1.8e\t%+1.8e\t%+1.8e' % tuple((boundariesl+boundariesr)/2))
+        print('Given center:\t\t%+1.8e\t%+1.8e\t%+1.8e' % tuple((xmin+xmax)/2))
 
     # return min & maximum refinement levels in the block, block list, and number of blocks in each direction
     bns = [bx, by, bz]

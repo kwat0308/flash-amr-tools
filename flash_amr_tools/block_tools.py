@@ -163,13 +163,14 @@ def add_blocks(minref_blist, coords, block_size, gid, bnx, bny, bnz, bnmax, cent
 
 
 # Sort all blocks at minimum refinement level and replace block with their higher refinement level counterparts.
-def create_blists(minref_blist, max_ref_lvl, block_level, gid, coords, bnx=0, bny=0, bnz=0, is_cuboid=False):
+def create_blists(minref_blist, max_ref_lvl, block_level, gid, coords, bnx=0, bny=0, bnz=0, is_cuboid=False, verbose=False):
 
     # Put the block of the minimum refinement level on a grid correspoding to their coordinates.
     # Change axes to be in order of x, y and z.
     blist_minsort_tmp = blocks_on_grid(b_ids=minref_blist, coords=coords, bnx=bnx, bny=bny, bnz=bnz).swapaxes(0, 2)
-    print('bnx, bny, bnz: ', bnx, bny, bnz)
-    print('Block shape: ', blist_minsort_tmp.shape)
+    if verbose:
+        print('bnx, bny, bnz: ', bnx, bny, bnz)
+        print('Block shape: ', blist_minsort_tmp.shape)
     blist_minsort = []
     # Add blocks in amr order to list.
     if is_cuboid:
