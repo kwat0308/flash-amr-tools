@@ -391,7 +391,7 @@ def get_cdens(data, axis, ref_lvl, bbox, bsize, brefs, bns, weights=None):
     coords = coords.astype(int) * bshape
 
     ref_lvl = bmax - ref_lvl
-    sh = data.shape
+    sh = data[1:4].shape
 
     use_weights = False
     if weights is not None:
