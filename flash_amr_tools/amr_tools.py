@@ -93,7 +93,8 @@ def get_true_blocks(
     # Find all leaf blocks for inner and outer borders
     # Inner borders only includes blocks which center coordinate is included in selected region.
     # Outer borders also includes blocks which intersect with the selected region. Those variables are denoted with a 2.
-    print('Finding all leaf blocks in given region')
+    if verbose:
+        print('Finding all leaf blocks in given region')
     ind = np.argwhere(np.all(gid[:, 7:] == -1, axis=1)).T[0]
     tmpc = coords[ind]
     tmpbs = block_size[ind] * 0.5
@@ -109,7 +110,7 @@ def get_true_blocks(
             'No block center is availabe in the selected region.'
         )
 
-    print(blist_raw.size, blist_raw2.size)
+    # print(blist_raw.size, blist_raw2.size)
     bsmin = block_size[ind].min()
 
     brlvl = refine_level[blist_raw]
@@ -140,7 +141,7 @@ def get_true_blocks(
         print('Biggest block has refinement level: %s' % min_ref)
         print('Highest refinement level in simulation: %s' % max_ref)
         print('Highest refinement level in selected box: %s' % max_ref_reg)
-
+    
     print('Extending region to fit amr structure at level %s.' % min_ref)
     blist_minref, bx, by, bz, bmax = find_blocks(
         block_list=blist_raw, min_ref_lvl=min_ref, max_ref_lvl=max_ref, block_size=block_size, brlvl=brlvl, bsmin=bsmin,
@@ -148,9 +149,10 @@ def get_true_blocks(
     )
 
     while np.any([bx != bmax, by != bmax, bz != bmax]):
-        print(
-            'Trying extended region given by including blocks whose center is not in predefined region but part '
-            'of their block volume is.')
+        if verbose:
+            print(
+                'Trying extended region given by including blocks whose center is not in predefined region but part '
+                'of their block volume is.')
 
         blist_minref, bx, by, bz, bmax = find_blocks(
             block_list=blist_raw2, min_ref_lvl=min_ref2, max_ref_lvl=max_ref, block_size=block_size, brlvl=brlvl2,
@@ -169,9 +171,10 @@ def get_true_blocks(
             brlvl = brlvl2
             blist_raw = blist_raw2
             max_ref_reg = max_ref_reg2
-            print('New biggest block has refinement level: %s' % min_ref)
-            print('New highest refinement level in simulation: %s' % max_ref)
-            print('New highest refinement level in selected box: %s' % max_ref_reg)
+            if verbose:
+                print('New biggest block has refinement level: %s' % min_ref)
+                print('New highest refinement level in simulation: %s' % max_ref)
+                print('New highest refinement level in selected box: %s' % max_ref_reg)
 
         else:
             min_ref -= 1
@@ -179,7 +182,8 @@ def get_true_blocks(
             if min_ref == 0:
                 sys.exit('Region could not be extended to a cubic block shape.')
 
-            print('Could not extend region far enough. Extending again at level %s' % min_ref)
+            if verbose:
+                print('Could not extend region far enough. Extending again at level %s' % min_ref)
             blist_minref, bx, by, bz, bmax = find_blocks(
                 block_list=blist_raw, min_ref_lvl=min_ref, max_ref_lvl=max_ref, block_size=block_size, brlvl=brlvl,
                 bsmin=bsmin, coords=coords, gid=gid, refine_level=refine_level, center=(xmin+xmax)/2., is_cuboid=is_cuboid
