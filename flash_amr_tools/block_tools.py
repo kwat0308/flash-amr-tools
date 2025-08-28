@@ -6,16 +6,31 @@ from .zorder import zenumerate
 
 # Find all blocks at lowest refinement level which are correspoding to our initial guess
 def find_blocks(
-        block_list, min_ref_lvl, max_ref_lvl, brlvl, coords, block_size, bsmin, refine_level, gid, center, is_cuboid=False):
+    block_list, 
+    min_ref_lvl, max_ref_lvl, 
+    brlvl, coords, block_size, bsmin,
+    refine_level, gid, center, 
+    is_cuboid=False,
+    verbose=False
+):
 
     # For all block which are higher than our set refinement level find the lowest parent which is fulfills our
     # requested refinement level.
+    # Faster routine
+    tmp_blist = block_list.copy()
     blist_ref = []
-    for block in block_list[brlvl > min_ref_lvl]:
-        b_tmp = block
-        while refine_level[b_tmp] > min_ref_lvl:
-            b_tmp = gid[b_tmp][6] - 1
-        blist_ref.append(b_tmp)
+    for i in range(max_ref_lvl - min_ref_lvl - 1):
+        tmp_sel = refine_level[tmp_blist] > min_ref_lvl
+        tmp_gid = gid[tmp_blist]
+        tmp_blist = np.unique(tmp_gid[tmp_sel, 6] - 1)
+        blist_ref += tmp_blist[refine_level[tmp_blist] == min_ref_lvl].tolist()
+
+    #blist_ref = []
+    #for block in block_list[brlvl > min_ref_lvl]:
+    #    b_tmp = block
+    #    while refine_level[b_tmp] > min_ref_lvl:
+    #        b_tmp = gid[b_tmp][6] - 1
+    #    blist_ref.append(b_tmp)
 
     # As there will be many overlaps we create a unique list of block ids
     blist_ref = np.unique(blist_ref)
@@ -45,10 +60,11 @@ def find_blocks(
     # Check if we have all our blocks fill the cuboid at least in numbers. Let's hope this is never the case.
     # Currently no idea how to fix this.
     if not bnx * bny * bnz == minref_blist.shape[0]:
-        print('Blocks in x: ', bnx)
-        print('Blocks in y: ', bny)
-        print('Blocks in z: ', bnz)
-        print(minref_blist.shape)
+        if verbose:
+            print('Blocks in x: ', bnx)
+            print('Blocks in y: ', bny)
+            print('Blocks in z: ', bnz)
+            print(minref_blist.shape)
         return 1, 1, 1, 1, 2
         # sys.exit('Could not find enough blocks to fill cuboid.')
     elif is_cuboid:
