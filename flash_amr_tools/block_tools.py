@@ -183,15 +183,28 @@ def create_blists(minref_blist, max_ref_lvl, block_level, gid, coords, bnx=0, bn
     maxref_blist = np.asarray(blist_minsort)
     gid_tmp = gid[maxref_blist, 7:]
     tot_nr_blocks = maxref_blist.size
-    # Goes through all refinement levels one by one.
+
+    # This is much faster than the old routine
+    # Especially for larger simulations (> 100k blocks)
     for j in range(max_ref_lvl - block_level):
-        # Adds from back to front to circumvent changing the position every time blocks are added.
-        for k in reversed(range(len(gid_tmp))):
-            if gid_tmp[k, 0] != -1:
-                maxref_blist = np.delete(maxref_blist, k)
-                maxref_blist = np.insert(maxref_blist, k, gid_tmp[k]-1)
-                tot_nr_blocks += 8
-        gid_tmp = gid[maxref_blist, 7:]
+        tmp_gid = gid[maxref_blist]
+        sel_gid = tmp_gid[:, -1] > 0
+        new_children = tmp_gid[sel_gid, 7:] - 1
+        tmp_blist = maxref_blist[np.logical_not(sel_gid)].tolist()
+        tmp_blist += new_children.flatten().tolist()
+        tot_nr_blocks += new_children.size
+        maxref_blist = np.sort(tmp_blist)
+
+    # Goes through all refinement levels one by one.
+    #for j in range(max_ref_lvl - block_level):
+    #    # Adds from back to front to circumvent changing the position every time blocks are added.
+    #    for k in reversed(range(len(gid_tmp))):
+    #        if gid_tmp[k, 0] != -1:
+    #            maxref_blist = np.delete(maxref_blist, k)
+    #            maxref_blist = np.insert(maxref_blist, k, gid_tmp[k]-1)
+    #            tot_nr_blocks += 8
+    #    gid_tmp = gid[maxref_blist, 7:]
+
     return maxref_blist, tot_nr_blocks
     
 
