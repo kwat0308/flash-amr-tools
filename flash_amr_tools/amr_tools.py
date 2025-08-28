@@ -112,6 +112,7 @@ def get_true_blocks(
     
     if verbose:
         print(blist_raw.size, blist_raw2.size)
+    
     bsmin = block_size[ind].min()
 
     brlvl = refine_level[blist_raw]
@@ -147,6 +148,7 @@ def get_true_blocks(
     
     if verbose:
         print('Extending region to fit amr structure at level %s.' % min_ref)
+    
     blist_minref, bx, by, bz, bmax = find_blocks(
         block_list=blist_raw, min_ref_lvl=min_ref, max_ref_lvl=max_ref, block_size=block_size, brlvl=brlvl, bsmin=bsmin,
         coords=coords, gid=gid, refine_level=refine_level, center=(xmin+xmax)/2., is_cuboid=is_cuboid, verbose=verbose
@@ -156,8 +158,7 @@ def get_true_blocks(
         if verbose:
             print(
                 'Trying extended region given by including blocks whose center is not in predefined region but part '
-                'of their block volume is.'
-            )
+                'of their block volume is.')
 
         blist_minref, bx, by, bz, bmax = find_blocks(
             block_list=blist_raw2, min_ref_lvl=min_ref2, max_ref_lvl=max_ref, block_size=block_size, brlvl=brlvl2,
