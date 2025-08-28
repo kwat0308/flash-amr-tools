@@ -1,5 +1,6 @@
 # flash-amr-tools
-Small tool to create uniform data cubes of FLASH datasets. Port from [bitbucket.org/pierrenbg/flash-amr-tools](https://bitbucket.org/pierrenbg/flash-amr-tools/src/master/)
+Small tool to create uniform data cubes of FLASH datasets. Port from [bitbucket.org/pierrenbg/flash-amr-tools](https://bitbucket.org/pierrenbg/flash-amr-tools/src/master/).
+
 
 ## Dependencies
 
