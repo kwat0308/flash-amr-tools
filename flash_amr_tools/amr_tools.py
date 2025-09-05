@@ -20,7 +20,10 @@ def get_true_blocks(
         verbose=True,
     ):
     '''
-    Extract the complete list of blocks which are in the box chosen within xmin and xmax. In particular, it sets the minimum & maximum refinement within the block list, and the number of blocks in x, y, z on the lowest refinement level.
+    Extract the complete list of blocks which are in the box chosen 
+    within xmin and xmax. In particular, it sets the minimum & 
+    maximum refinement within the block list, and the number of 
+    blocks in x, y, z on the lowest refinement level.
 
     - fname (str): the filename of the FLASH output file. needs to be a .h5 file
     - xmin (3-D array): the lower corner of the region of interest. Defaults to empty array, which uses the whole domain
@@ -150,8 +153,18 @@ def get_true_blocks(
         print('Extending region to fit amr structure at level %s.' % min_ref)
     
     blist_minref, bx, by, bz, bmax = find_blocks(
-        block_list=blist_raw, min_ref_lvl=min_ref, max_ref_lvl=max_ref, block_size=block_size, brlvl=brlvl, bsmin=bsmin,
-        coords=coords, gid=gid, refine_level=refine_level, center=(xmin+xmax)/2., is_cuboid=is_cuboid, verbose=verbose
+        block_list=blist_raw,
+        min_ref_lvl=min_ref,
+        max_ref_lvl=max_ref,
+        block_size=block_size,
+        brlvl=brlvl,
+        bsmin=bsmin,
+        coords=coords,
+        gid=gid,
+        refine_level=refine_level,
+        center=(xmin+xmax)/2.,
+        is_cuboid=is_cuboid,
+        verbose=verbose
     )
 
     while np.any([bx != bmax, by != bmax, bz != bmax]):
