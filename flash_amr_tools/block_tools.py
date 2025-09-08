@@ -238,7 +238,7 @@ def create_blists(
     block_level, gid, coords, 
     bnx=0, bny=0, bnz=0,
     is_cuboid=False, verbose=False,
-    is_ramdc=False
+    is_radmc=False
 ):
 
     # Put the block of the minimum refinement level
