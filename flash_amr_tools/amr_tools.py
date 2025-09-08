@@ -18,6 +18,7 @@ def get_true_blocks(
         max_ref_given=None,
         min_ref_given=None,
         verbose=True,
+        is_radmc=False,
     ):
     '''
     Extract the complete list of blocks which are in the box chosen 
@@ -32,6 +33,7 @@ def get_true_blocks(
     - max_ref_given (int): force the maximum refinement level of the blocks. Defaults to None, which uses the maximum refinement level in the simulation.
     - min_ref_given (int): force the minimum refinement level of the blocks. Defaults to None, which uses the minimum refinement level in the simulation.
     - verbose (bool) : show print statements or not.
+    - is_radmc (bool): Revert to slower method to create the blist, which is necessary for the RADMC-3D pipeline
 
     Returns:
     - blist (list) : the list of blocks that cover the region of interest 
@@ -223,7 +225,7 @@ def get_true_blocks(
 
     blist_maxref, b_tot_nr = create_blists(
         minref_blist=blist_minref, block_level=blvl, gid=gid, coords=coords, max_ref_lvl=max_ref,
-        bnx=bx, bny=by, bnz=bz, is_cuboid=is_cuboid, verbose=verbose,
+        bnx=bx, bny=by, bnz=bz, is_cuboid=is_cuboid, verbose=verbose, is_radmc=is_radmc
     )
 
     if not is_cuboid:

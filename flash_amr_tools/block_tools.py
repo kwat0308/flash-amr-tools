@@ -237,7 +237,8 @@ def create_blists(
     minref_blist, max_ref_lvl,
     block_level, gid, coords, 
     bnx=0, bny=0, bnz=0,
-    is_cuboid=False, verbose=False
+    is_cuboid=False, verbose=False,
+    is_ramdc=False
 ):
 
     # Put the block of the minimum refinement level
@@ -268,27 +269,34 @@ def create_blists(
     gid_tmp = gid[maxref_blist, 7:]
     tot_nr_blocks = maxref_blist.size
 
-    # This is much faster than the old routine
-    # Especially for larger simulations (> 100k blocks)
-    for j in range(max_ref_lvl - block_level):
-        tmp_gid = gid[maxref_blist]
-        sel_gid = tmp_gid[:, -1] > 0
-        new_children = tmp_gid[sel_gid, 7:] - 1
-        tmp_blist = maxref_blist[np.logical_not(sel_gid)].tolist()
-        tmp_blist += new_children.flatten().tolist()
-        tot_nr_blocks += new_children.size
-        maxref_blist = np.sort(tmp_blist)
+    # For the FLASH-PP-Pipeline we still require this mode.
+    # As we have to preserve the correct order of blocks
+    # in the cuboid mode.
+    # Possibly one can speed up this part but this is not
+    # necessary for the pipeline.
+    if is_radmc:
+        # Goes through all refinement levels one by one.
+        for j in range(max_ref_lvl - block_level):
+            # Adds from back to front to circumvent
+            # changing the position every time blocks are added.
+            for k in reversed(range(len(gid_tmp))):
+                if gid_tmp[k, 0] != -1:
+                    maxref_blist = np.delete(maxref_blist, k)
+                    maxref_blist = np.insert(maxref_blist, k, gid_tmp[k]-1)
+                    tot_nr_blocks += 8
+            gid_tmp = gid[maxref_blist, 7:]
 
-    # Goes through all refinement levels one by one.
-    #for j in range(max_ref_lvl - block_level):
-    #    # Adds from back to front to circumvent
-    #    # changing the position every time blocks are added.
-    #    for k in reversed(range(len(gid_tmp))):
-    #        if gid_tmp[k, 0] != -1:
-    #            maxref_blist = np.delete(maxref_blist, k)
-    #            maxref_blist = np.insert(maxref_blist, k, gid_tmp[k]-1)
-    #            tot_nr_blocks += 8
-    #    gid_tmp = gid[maxref_blist, 7:]
+    else:
+        # This is much faster than the old routine
+        # Especially for larger simulations (> 100k blocks)
+        for j in range(max_ref_lvl - block_level):
+            tmp_gid = gid[maxref_blist]
+            sel_gid = tmp_gid[:, -1] > 0
+            new_children = tmp_gid[sel_gid, 7:] - 1
+            tmp_blist = maxref_blist[np.logical_not(sel_gid)].tolist()
+            tmp_blist += new_children.flatten().tolist()
+            tot_nr_blocks += new_children.size
+            maxref_blist = np.sort(tmp_blist)
 
     return maxref_blist, tot_nr_blocks
     
